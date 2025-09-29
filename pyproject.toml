@@ -121,7 +121,7 @@ ja = [
 ]
 # Chinese
 zh = [
-    "jieba>=0.42.1",
+    "spacy_pkuseg>=1.0.1",
     "pypinyin>=0.40.0",
 ]
 # All language-specific dependencies
