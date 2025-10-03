@@ -24,7 +24,8 @@
 
 ## 📣 News
 - **Fork of the [original, unmaintained repository](https://github.com/coqui-ai/TTS). New PyPI package: [coqui-tts](https://pypi.org/project/coqui-tts)**
-- 0.25.0: [OpenVoice](https://github.com/myshell-ai/OpenVoice) models now available for voice conversion.
+- 0.27.0: [Caching mechanism](https://coqui-tts.readthedocs.io/en/latest/cloning.html) for cloned voices.
+- 0.25.2: [OpenVoice](https://github.com/myshell-ai/OpenVoice) and [kNN-VC](https://github.com/bshall/knn-vc) models now available for voice conversion.
 - 0.24.2: Prebuilt wheels are now also published for macOS and Windows (in addition to Linux as before) for easier installation across platforms.
 - 0.20.0: XTTSv2 is here with 17 languages and better performance across the board. XTTS can stream with <200ms latency.
 - 0.19.0: XTTS fine-tuning code is out. Check the [example recipes](https://github.com/idiap/coqui-ai-TTS/tree/dev/recipes/ljspeech).
@@ -286,6 +287,9 @@ api.tts_to_file(
     file_path="output.wav"
 )
 ```
+
+**Note:** Some Fairseq models need the romanization library `uroman` to be
+installed. For this you can install `coqui-tts` with the `languages` extra.
 
 ### Command-line interface `tts`
 

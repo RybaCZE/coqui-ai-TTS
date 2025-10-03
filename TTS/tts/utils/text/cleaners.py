@@ -1,4 +1,8 @@
-"""Set of default text cleaners"""
+"""Set of default text cleaners.
+
+Original cleaners from (MIT license):
+https://github.com/keithito/tacotron/blob/master/text/cleaners.py
+"""
 
 import re
 from unicodedata import normalize
