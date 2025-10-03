@@ -15,6 +15,8 @@ from .french.abbreviations import abbreviations_fr
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
 
+_uroman = None
+
 
 def expand_abbreviations(text: str, lang: str = "en") -> str:
     if lang == "en":
@@ -39,6 +41,19 @@ def collapse_whitespace(text: str) -> str:
 
 def convert_to_ascii(text: str) -> str:
     return anyascii(text)
+
+
+def romanize(text: str, language: str | None = None) -> str:
+    """Romanize any unicode input with uroman."""
+    global _uroman
+    if _uroman is None:
+        try:
+            import uroman
+        except ImportError as e:
+            msg = "Package not installed: uroman (available in the `languages` extra)"
+            raise ImportError(msg) from e
+        _uroman = uroman.Uroman()
+    return _uroman.romanize_string(text, lcode=language)
 
 
 def remove_aux_symbols(text: str) -> str:
@@ -91,6 +106,15 @@ def transliteration_cleaners(text: str) -> str:
     """Pipeline for non-English text that transliterates to ASCII."""
     text = normalize_unicode(text)
     # text = convert_to_ascii(text)
+    text = lowercase(text)
+    text = collapse_whitespace(text)
+    return text
+
+
+def uroman_cleaners(text: str) -> str:
+    """Pipeline for romanizing non-Latin text with uroman used by some Fairseq models."""
+    text = normalize_unicode(text)
+    text = romanize(text)
     text = lowercase(text)
     text = collapse_whitespace(text)
     return text
