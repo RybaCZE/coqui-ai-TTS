@@ -80,6 +80,7 @@ dependencies = [
     "coqui-tts-trainer>=0.3.0,<0.4.0",
     "coqpit-config>=0.2.0,<0.3.0",
     "monotonic-alignment-search>=0.1.0",
+    "ko-speech-tools>=0.1.0",
     # Gruut + supported languages
     "gruut[de,es,fr]>=2.4.0",
     # Tortoise
@@ -109,10 +110,7 @@ bn = [
 ]
 # Korean
 ko = [
-    "hangul_romanize>=0.1.0",
-    "jamo>=0.4.1",
-    "g2pkk>=0.1.1",
-    "pip>=22.2",
+    "ko-speech-tools[g2p]>=0.1.0",
 ]
 # Japanese
 ja = [
