@@ -16,7 +16,6 @@ from torch.nn.utils.parametrize import remove_parametrizations
 import TTS.vc.layers.freevc.modules as modules
 from TTS.tts.layers.vits.discriminator import DiscriminatorS
 from TTS.tts.utils.helpers import sequence_mask
-from TTS.tts.utils.speakers import SpeakerManager
 from TTS.utils.voices import CloningMixin
 from TTS.vc.configs.freevc_config import FreeVCConfig
 from TTS.vc.layers.freevc.commons import init_weights, rand_slice_segments
@@ -260,10 +259,8 @@ class FreeVC(CloningMixin, BaseVC):
         >>> model = FreeVC(config)
     """
 
-    def __init__(self, config: Coqpit, speaker_manager: SpeakerManager = None):
-        super().__init__(config, None, speaker_manager)
-
-        self.init_multispeaker(config)
+    def __init__(self, config: Coqpit):
+        super().__init__(config)
 
         self.spec_channels = self.args.spec_channels
         self.inter_channels = self.args.inter_channels
@@ -314,20 +311,6 @@ class FreeVC(CloningMixin, BaseVC):
         self.enc_spk_ex = SpeakerEncoderEx(
             "https://github.com/coqui-ai/TTS/releases/download/v0.13.0_models/speaker_encoder.pt"
         )
-
-    def init_multispeaker(self, config: Coqpit):
-        """Initialize multi-speaker modules of a model. A model can be trained either with a speaker embedding layer
-        or with external `d_vectors` computed from a speaker encoder model.
-
-        You must provide a `speaker_manager` at initialization to set up the multi-speaker modules.
-
-        Args:
-            config (Coqpit): Model configuration.
-            data (List, optional): Dataset items to infer number of speakers. Defaults to None.
-        """
-        self.num_spks = self.args.num_spks
-        if self.speaker_manager:
-            self.num_spks = self.speaker_manager.num_spks
 
     def forward(
         self,
