@@ -7,7 +7,6 @@ from TTS.tts.configs.shared_configs import BaseDatasetConfig
 from TTS.tts.configs.tacotron2_config import Tacotron2Config
 from TTS.tts.datasets import load_tts_samples
 from TTS.tts.models.tacotron2 import Tacotron2
-from TTS.tts.utils.speakers import SpeakerManager
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.utils.audio import AudioProcessor
 
@@ -88,13 +87,9 @@ def main():
         eval_split_size=config.eval_split_size,
     )
 
-    # init speaker manager for multi-speaker training
-    # it mainly handles speaker-id to speaker-name for the model and the data-loader
-    speaker_manager = SpeakerManager()
-    speaker_manager.set_ids_from_data(train_samples + eval_samples, parse_key="speaker_name")
-
     # init model
-    model = Tacotron2(config, ap, tokenizer, speaker_manager)
+    model = Tacotron2(config, ap, tokenizer)
+    model.init_multispeaker(train_samples + eval_samples)
 
     # INITIALIZE THE TRAINER
     # Trainer provides a generic API to train all the 🐸TTS models with all its perks like mixed-precision training,

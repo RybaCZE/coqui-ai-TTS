@@ -17,7 +17,6 @@ from TTS.tts.layers.overflow.plotting_utils import (
     plot_transition_probabilities_to_numpy,
 )
 from TTS.tts.models.base_tts import BaseTTS
-from TTS.tts.utils.speakers import SpeakerManager
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.tts.utils.visual import plot_alignment, plot_spectrogram
 from TTS.utils.generic_utils import format_aux_input, is_pytorch_at_least_2_4
@@ -69,9 +68,8 @@ class Overflow(BaseTTS):
         config: "OverFlowConfig",
         ap: "AudioProcessor" = None,
         tokenizer: "TTSTokenizer" = None,
-        speaker_manager: SpeakerManager = None,
     ):
-        super().__init__(config, ap, tokenizer, speaker_manager)
+        super().__init__(config, ap, tokenizer)
 
         # pass all config fields to `self`
         # for fewer code change
@@ -264,8 +262,7 @@ class Overflow(BaseTTS):
 
         ap = AudioProcessor.init_from_config(config)
         tokenizer, new_config = TTSTokenizer.init_from_config(config)
-        speaker_manager = SpeakerManager.init_from_config(config, samples)
-        return Overflow(new_config, ap, tokenizer, speaker_manager)
+        return Overflow(new_config, ap, tokenizer)
 
     def load_checkpoint(
         self,

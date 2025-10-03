@@ -30,7 +30,6 @@ from TTS.tts.layers.vits.discriminator import VitsDiscriminator
 from TTS.tts.models.base_tts import BaseTTSE2E
 from TTS.tts.models.vits import load_audio
 from TTS.tts.utils.helpers import average_over_durations, compute_attn_prior, rand_segments, segment, sequence_mask
-from TTS.tts.utils.speakers import SpeakerManager
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.tts.utils.visual import plot_alignment, plot_avg_pitch, plot_pitch, plot_spectrogram
 from TTS.utils.audio.numpy_transforms import build_mel_basis, compute_f0
@@ -404,15 +403,14 @@ class DelightfulTTS(BaseTTSE2E):
         config: Coqpit,
         ap,
         tokenizer: "TTSTokenizer" = None,
-        speaker_manager: SpeakerManager = None,
     ):
-        super().__init__(config=config, ap=ap, tokenizer=tokenizer, speaker_manager=speaker_manager)
+        super().__init__(config=config, ap=ap, tokenizer=tokenizer)
         self.init_multispeaker(config)
         self.binary_loss_weight = None
 
         self.args.out_channels = self.config.audio.num_mels
         self.args.num_mels = self.config.audio.num_mels
-        self.acoustic_model = AcousticModel(args=self.args, tokenizer=tokenizer, speaker_manager=speaker_manager)
+        self.acoustic_model = AcousticModel(args=self.args, tokenizer=tokenizer, speaker_manager=self.speaker_manager)
 
         self.waveform_decoder = HifiganGenerator(
             self.config.audio.num_mels,
@@ -1182,9 +1180,8 @@ class DelightfulTTS(BaseTTSE2E):
         """
 
         tokenizer, new_config = TTSTokenizer.init_from_config(config)
-        speaker_manager = SpeakerManager.init_from_config(config.model_args, samples)
         ap = AudioProcessor.init_from_config(config=config)
-        return DelightfulTTS(config=new_config, tokenizer=tokenizer, speaker_manager=speaker_manager, ap=ap)
+        return DelightfulTTS(config=new_config, tokenizer=tokenizer, ap=ap)
 
     def get_state_dict(self):
         """Custom state dict of the model with all the necessary components for inference."""

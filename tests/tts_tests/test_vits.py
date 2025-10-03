@@ -249,7 +249,8 @@ class TestVits(unittest.TestCase):
         speaker_ids = torch.randint(0, num_speakers, (batch_size,)).long().to(device)
         lang_ids = torch.randint(0, num_langs, (batch_size,)).long().to(device)
 
-        model = Vits(config, speaker_manager=speaker_manager).to(device)
+        model = Vits(config).to(device)
+        model.speaker_manager = speaker_manager
         output_dict = model.forward(
             input_dummy,
             input_lengths,

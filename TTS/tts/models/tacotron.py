@@ -7,7 +7,6 @@ from TTS.tts.layers.tacotron.gst_layers import GST
 from TTS.tts.layers.tacotron.tacotron import Decoder, Encoder, PostCBHG
 from TTS.tts.models.base_tacotron import BaseTacotron
 from TTS.tts.utils.measures import alignment_diagonal_score
-from TTS.tts.utils.speakers import SpeakerManager
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.tts.utils.visual import plot_alignment, plot_spectrogram
 from TTS.utils.capacitron_optimizer import CapacitronOptimizer
@@ -29,9 +28,8 @@ class Tacotron(BaseTacotron):
         config: "TacotronConfig",
         ap: "AudioProcessor" = None,
         tokenizer: "TTSTokenizer" = None,
-        speaker_manager: SpeakerManager = None,
     ):
-        super().__init__(config, ap, tokenizer, speaker_manager)
+        super().__init__(config, ap, tokenizer)
 
         # pass all config fields to `self`
         # for fewer code change
@@ -389,5 +387,4 @@ class Tacotron(BaseTacotron):
 
         ap = AudioProcessor.init_from_config(config)
         tokenizer, new_config = TTSTokenizer.init_from_config(config)
-        speaker_manager = SpeakerManager.init_from_config(config, samples)
-        return Tacotron(new_config, ap, tokenizer, speaker_manager)
+        return Tacotron(new_config, ap, tokenizer)

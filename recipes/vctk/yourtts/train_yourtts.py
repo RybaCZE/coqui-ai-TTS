@@ -243,6 +243,7 @@ def main():
 
     # Init the model
     model = Vits.init_from_config(config)
+    model.init_multispeaker(train_samples + eval_samples)
 
     # Init the trainer and 🚀
     trainer = Trainer(

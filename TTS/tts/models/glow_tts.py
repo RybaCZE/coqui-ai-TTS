@@ -14,7 +14,6 @@ from TTS.tts.layers.glow_tts.decoder import Decoder
 from TTS.tts.layers.glow_tts.encoder import Encoder
 from TTS.tts.models.base_tts import BaseTTS
 from TTS.tts.utils.helpers import generate_path, sequence_mask
-from TTS.tts.utils.speakers import SpeakerManager
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.tts.utils.visual import plot_alignment, plot_spectrogram
 
@@ -63,9 +62,8 @@ class GlowTTS(BaseTTS):
         config: GlowTTSConfig,
         ap: "AudioProcessor" = None,
         tokenizer: "TTSTokenizer" = None,
-        speaker_manager: SpeakerManager = None,
     ):
-        super().__init__(config, ap, tokenizer, speaker_manager)
+        super().__init__(config, ap, tokenizer)
 
         # pass all config fields to `self`
         # for fewer code change
@@ -498,5 +496,4 @@ class GlowTTS(BaseTTS):
 
         ap = AudioProcessor.init_from_config(config)
         tokenizer, new_config = TTSTokenizer.init_from_config(config)
-        speaker_manager = SpeakerManager.init_from_config(config, samples)
-        return GlowTTS(new_config, ap, tokenizer, speaker_manager)
+        return GlowTTS(new_config, ap, tokenizer)

@@ -11,7 +11,6 @@ from trainer.io import load_fsspec
 from TTS.tts.layers.losses import TacotronLoss
 from TTS.tts.models.base_tts import BaseTTS
 from TTS.tts.utils.helpers import sequence_mask
-from TTS.tts.utils.speakers import SpeakerManager
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.utils.generic_utils import format_aux_input
 from TTS.utils.training import gradual_training_scheduler
@@ -27,9 +26,8 @@ class BaseTacotron(BaseTTS):
         config: "TacotronConfig",
         ap: "AudioProcessor",
         tokenizer: "TTSTokenizer",
-        speaker_manager: SpeakerManager = None,
     ):
-        super().__init__(config, ap, tokenizer, speaker_manager)
+        super().__init__(config, ap, tokenizer)
 
         # pass all config fields as class attributes
         for key in config:
@@ -158,8 +156,7 @@ class BaseTacotron(BaseTTS):
 
         ap = AudioProcessor.init_from_config(config)
         tokenizer = TTSTokenizer.init_from_config(config)
-        speaker_manager = SpeakerManager.init_from_config(config)
-        return BaseTacotron(config, ap, tokenizer, speaker_manager)
+        return BaseTacotron(config, ap, tokenizer)
 
     #############################
     # COMMON COMPUTE FUNCTIONS

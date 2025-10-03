@@ -13,7 +13,6 @@ from TTS.tts.layers.generic.pos_encoding import PositionalEncoding
 from TTS.tts.layers.glow_tts.duration_predictor import DurationPredictor
 from TTS.tts.models.base_tts import BaseTTS
 from TTS.tts.utils.helpers import average_over_durations, expand_encoder_outputs, generate_attention, sequence_mask
-from TTS.tts.utils.speakers import SpeakerManager
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.tts.utils.visual import plot_alignment, plot_avg_energy, plot_avg_pitch, plot_spectrogram
 
@@ -204,9 +203,8 @@ class ForwardTTS(BaseTTS):
         config: Coqpit,
         ap: "AudioProcessor" = None,
         tokenizer: "TTSTokenizer" = None,
-        speaker_manager: SpeakerManager = None,
     ):
-        super().__init__(config, ap, tokenizer, speaker_manager)
+        super().__init__(config, ap, tokenizer)
 
         self.init_multispeaker(config)
 
@@ -790,5 +788,4 @@ class ForwardTTS(BaseTTS):
 
         ap = AudioProcessor.init_from_config(config)
         tokenizer, new_config = TTSTokenizer.init_from_config(config)
-        speaker_manager = SpeakerManager.init_from_config(config, samples)
-        return ForwardTTS(new_config, ap, tokenizer, speaker_manager)
+        return ForwardTTS(new_config, ap, tokenizer)
