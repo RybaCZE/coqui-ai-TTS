@@ -15,7 +15,6 @@ from trainer.trainer import Trainer
 from TTS.model import BaseTrainerModel
 from TTS.tts.datasets.dataset import TTSDataset
 from TTS.tts.utils.data import get_length_balancer_weights
-from TTS.tts.utils.languages import LanguageManager, get_language_balancer_weights
 from TTS.tts.utils.speakers import SpeakerManager, get_speaker_balancer_weights
 from TTS.utils.audio.processor import AudioProcessor
 
@@ -37,13 +36,11 @@ class BaseVC(BaseTrainerModel):
         config: Coqpit,
         ap: AudioProcessor | None = None,
         speaker_manager: SpeakerManager | None = None,
-        language_manager: LanguageManager | None = None,
     ) -> None:
         super().__init__()
         self.config = config
         self.ap = ap
         self.speaker_manager = speaker_manager
-        self.language_manager = language_manager
         self._set_model_args(config)
 
     def _set_model_args(self, config: Coqpit) -> None:
@@ -108,8 +105,8 @@ class BaseVC(BaseTrainerModel):
         else:
             config = self.config
 
-        # extract speaker and language info
-        text, speaker_name, style_wav, language_name = None, None, None, None
+        # extract speaker info
+        text, speaker_name, style_wav = None, None, None
 
         if isinstance(sentence_info, list):
             if len(sentence_info) == 1:
@@ -118,13 +115,11 @@ class BaseVC(BaseTrainerModel):
                 text, speaker_name = sentence_info
             elif len(sentence_info) == 3:
                 text, speaker_name, style_wav = sentence_info
-            elif len(sentence_info) == 4:
-                text, speaker_name, style_wav, language_name = sentence_info
         else:
             text = sentence_info
 
         # get speaker  id/d_vector
-        speaker_id, d_vector, language_id = None, None, None
+        speaker_id, d_vector = None, None
         if self.speaker_manager is not None:
             if config.use_d_vector_file:
                 if speaker_name is None:
@@ -137,16 +132,11 @@ class BaseVC(BaseTrainerModel):
                 else:
                     speaker_id = self.speaker_manager.name_to_id[speaker_name]
 
-        # get language id
-        if self.language_manager is not None and config.use_language_embedding and language_name is not None:
-            language_id = self.language_manager.name_to_id[language_name]
-
         return {
             "text": text,
             "speaker_id": speaker_id,
             "style_wav": style_wav,
             "d_vector": d_vector,
-            "language_id": language_id,
         }
 
     def format_batch(self, batch: dict[str, Any]) -> dict[str, Any]:
@@ -175,7 +165,6 @@ class BaseVC(BaseTrainerModel):
         waveform = batch["waveform"]
         pitch = batch["pitch"]
         energy = batch["energy"]
-        language_ids = batch["language_ids"]
         max_text_length = torch.max(text_lengths.float())
         max_spec_length = torch.max(mel_lengths.float())
 
@@ -224,18 +213,12 @@ class BaseVC(BaseTrainerModel):
             "waveform": waveform,
             "pitch": pitch,
             "energy": energy,
-            "language_ids": language_ids,
             "audio_unique_names": batch["audio_unique_names"],
         }
 
     def get_sampler(self, config: Coqpit, dataset: TTSDataset, num_gpus: int = 1):
         weights = None
         data_items = dataset.samples
-
-        if getattr(config, "use_language_weighted_sampler", False):
-            alpha = getattr(config, "language_weighted_sampler_alpha", 1.0)
-            logger.info("Using Language weighted sampler with alpha: %.2f", alpha)
-            weights = get_language_balancer_weights(data_items) * alpha
 
         if getattr(config, "use_speaker_weighted_sampler", False):
             alpha = getattr(config, "speaker_weighted_sampler_alpha", 1.0)
@@ -294,12 +277,6 @@ class BaseVC(BaseTrainerModel):
                 speaker_id_mapping = None
                 d_vector_mapping = None
 
-            # setup multi-lingual attributes
-            if self.language_manager is not None:
-                language_id_mapping = self.language_manager.name_to_id if self.args.use_language_embedding else None
-            else:
-                language_id_mapping = None
-
             # init dataloader
             dataset = TTSDataset(
                 outputs_per_step=config.r if "r" in config else 1,
@@ -323,7 +300,6 @@ class BaseVC(BaseTrainerModel):
                 d_vector_mapping=d_vector_mapping if config.use_d_vector_file else None,
                 tokenizer=None,
                 start_by_longest=config.start_by_longest,
-                language_id_mapping=language_id_mapping,
             )
 
             # wait all the DDP process to be ready
@@ -381,7 +357,7 @@ class BaseVC(BaseTrainerModel):
         raise NotImplementedError
 
     def on_init_start(self, trainer: Trainer) -> None:
-        """Save the speaker.pth and language_ids.json at the beginning of the training. Also update both paths."""
+        """Save the speaker.pth at the beginning of the training. Also update both paths."""
         if self.speaker_manager is not None:
             output_path = os.path.join(trainer.output_path, "speakers.pth")
             self.speaker_manager.save_ids_to_file(output_path)
@@ -392,13 +368,3 @@ class BaseVC(BaseTrainerModel):
             trainer.config.save_json(os.path.join(trainer.output_path, "config.json"))
             logger.info("`speakers.pth` is saved to %s", output_path)
             logger.info("`speakers_file` is updated in the config.json.")
-
-        if self.language_manager is not None:
-            output_path = os.path.join(trainer.output_path, "language_ids.json")
-            self.language_manager.save_ids_to_file(output_path)
-            trainer.config.language_ids_file = output_path
-            if hasattr(trainer.config, "model_args"):
-                trainer.config.model_args.language_ids_file = output_path
-            trainer.config.save_json(os.path.join(trainer.output_path, "config.json"))
-            logger.info("`language_ids.json` is saved to %s", output_path)
-            logger.info("`language_ids_file` is updated in the config.json.")

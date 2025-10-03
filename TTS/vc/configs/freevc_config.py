@@ -221,12 +221,6 @@ class FreeVCConfig(BaseVCConfig):
         test_sentences (List[List]):
             List of sentences with speaker and language information to be used for testing.
 
-        language_ids_file (str):
-            Path to the language ids file.
-
-        use_language_embedding (bool):
-            If true, language embedding is used. Defaults to `False`.
-
     Note:
         Check :class:`TTS.tts.configs.shared_configs.BaseVCConfig` for the inherited parameters.
 

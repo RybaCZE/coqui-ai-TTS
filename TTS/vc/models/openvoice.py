@@ -119,7 +119,7 @@ class OpenVoice(CloningMixin, BaseVC):
     """
 
     def __init__(self, config: Coqpit, speaker_manager: SpeakerManager | None = None) -> None:
-        super().__init__(config, None, speaker_manager, None)
+        super().__init__(config, None, speaker_manager)
 
         self.init_multispeaker(config)
 

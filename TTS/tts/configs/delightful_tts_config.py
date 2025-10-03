@@ -56,7 +56,6 @@ class DelightfulTTSConfig(BaseTTSConfig):
         use_speaker_embedding (bool): Whether to use speaker embedding.
         speakers_file (str): Path to the speaker file.
         speaker_embedding_channels (int): Number of channels for the speaker embedding.
-        language_ids_file (str): Path to the language IDs file.
     """
 
     model: str = "delightful_tts"
@@ -130,7 +129,6 @@ class DelightfulTTSConfig(BaseTTSConfig):
     use_speaker_embedding: bool = False
     speakers_file: str = None
     speaker_embedding_channels: int = 256
-    language_ids_file: str = None
     use_language_embedding: bool = False
 
     # use d-vectors

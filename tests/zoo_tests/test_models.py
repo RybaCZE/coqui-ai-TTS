@@ -72,7 +72,7 @@ def test_models(tmp_path, model_name, manager):
                 speaker_arg = ["--speaker_idx", speakers[0]]
         if len(language_files) > 0 and "language_ids" in language_files[0].stem:
             # multi-lingual model
-            language_manager = LanguageManager(language_ids_file_path=language_files[0])
+            language_manager = LanguageManager(language_files[0])
             languages = language_manager.language_names
             if len(languages) > 1:
                 language_arg = ["--language_idx", languages[0]]

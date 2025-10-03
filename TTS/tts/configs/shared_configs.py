@@ -300,6 +300,9 @@ class BaseTTSConfig(BaseTrainingConfig):
 
         length_weighted_sampler_alpha (float):
             Number that control the influence of the length sampler weights. Defaults to ```1.0```.
+
+        language_ids_file (str):
+            Path to the language ids file.
     """
 
     audio: BaseAudioConfig = field(default_factory=BaseAudioConfig)
@@ -334,7 +337,7 @@ class BaseTTSConfig(BaseTrainingConfig):
     shuffle: bool = False
     drop_last: bool = False
     # dataset
-    datasets: list[BaseDatasetConfig] = field(default_factory=lambda: [BaseDatasetConfig()])
+    datasets: list[BaseDatasetConfig] = field(default_factory=list)
     # optimizer
     optimizer: str = "radam"
     optimizer_params: dict = None
@@ -353,6 +356,8 @@ class BaseTTSConfig(BaseTrainingConfig):
     language_weighted_sampler_alpha: float = 1.0
     use_length_weighted_sampler: bool = False
     length_weighted_sampler_alpha: float = 1.0
+
+    language_ids_file: str | None = None
 
     @property
     def supports_cloning(self) -> bool:
