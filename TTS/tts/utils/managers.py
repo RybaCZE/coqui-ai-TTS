@@ -25,7 +25,7 @@ def load_file(path: str | os.PathLike[Any]) -> Any:
         raise ValueError("Unsupported file type")
 
 
-def save_file(obj: Any, path: str | os.PathLike[Any]):
+def save_file(obj: Any, path: str | os.PathLike[Any]) -> None:
     path = str(path)
     if path.endswith(".json"):
         with fsspec.open(path, "w") as f:
@@ -48,16 +48,6 @@ class BaseIDManager:
 
         if id_file_path:
             self.load_ids_from_file(id_file_path)
-
-    @staticmethod
-    def _load_json(json_file_path: str | os.PathLike[Any]) -> dict[str, Any]:
-        with fsspec.open(str(json_file_path), "r") as f:
-            return json.load(f)
-
-    @staticmethod
-    def _save_json(json_file_path: str | os.PathLike[Any], data: dict[str, Any]) -> None:
-        with fsspec.open(str(json_file_path), "w") as f:
-            json.dump(data, f, indent=4)
 
     def set_ids_from_data(self, items: list[dict[str, Any]], parse_key: str) -> None:
         """Set IDs from data samples.
@@ -95,7 +85,7 @@ class BaseIDManager:
 
     @staticmethod
     def parse_ids_from_data(items: list[dict[str, Any]], parse_key: str) -> dict[str, int]:
-        """Parse IDs from data samples retured by `load_tts_samples()`.
+        """Parse IDs from data samples returned by `load_tts_samples()`.
 
         Args:
             items (list): Data sampled returned by `load_tts_samples()`.
@@ -109,8 +99,9 @@ class BaseIDManager:
 
 
 class EmbeddingManager(BaseIDManager):
-    """Base `Embedding` Manager class. Every new `Embedding` manager must inherit this.
-    It defines common `Embedding` manager specific functions.
+    """Base `Embedding` Manager class.
+
+    Every new `Embedding` manager must inherit this. It defines common `Embedding` manager specific functions.
 
     It expects embeddings files in the following format:
 
@@ -136,7 +127,7 @@ class EmbeddingManager(BaseIDManager):
         encoder_model_path: str | os.PathLike[Any] = "",
         encoder_config_path: str | os.PathLike[Any] = "",
         use_cuda: bool = False,
-    ):
+    ) -> None:
         super().__init__(id_file_path=id_file_path)
 
         self.embeddings = {}
@@ -144,7 +135,6 @@ class EmbeddingManager(BaseIDManager):
         self.clip_ids = []
         self.encoder = None
         self.encoder_ap = None
-        self.use_cuda = use_cuda
 
         if embedding_file_path:
             if isinstance(embedding_file_path, list):
@@ -263,20 +253,6 @@ class EmbeddingManager(BaseIDManager):
             List[List]: all the embeddings of the given speaker.
         """
         return self.embeddings_by_names[idx]
-
-    def get_embeddings_by_names(self) -> dict[str, Any]:
-        """Get all embeddings by names.
-
-        Returns:
-            Dict: all the embeddings of each speaker.
-        """
-        embeddings_by_names = {}
-        for x in self.embeddings.values():
-            if x["name"] not in embeddings_by_names.keys():
-                embeddings_by_names[x["name"]] = [x["embedding"]]
-            else:
-                embeddings_by_names[x["name"]].append(x["embedding"])
-        return embeddings_by_names
 
     def get_mean_embedding(self, idx: str, num_samples: int | None = None, randomize: bool = False) -> np.ndarray:
         """Get mean embedding of a idx.

@@ -42,13 +42,12 @@ class BaseTTS(CloningMixin, BaseTrainerModel):
         config: Coqpit,
         ap: "AudioProcessor",
         tokenizer: "TTSTokenizer",
-        speaker_manager: SpeakerManager | None = None,
     ):
         super().__init__()
         self.config = config
         self.ap = ap
         self.tokenizer = tokenizer
-        self.speaker_manager = speaker_manager
+        self.speaker_manager = SpeakerManager.init_from_config(config)
         self.language_manager = LanguageManager.init_from_config(self.config)
         self._set_model_args(config)
 
@@ -83,40 +82,86 @@ class BaseTTS(CloningMixin, BaseTrainerModel):
         else:
             raise ValueError("config must be either a *Config or *Args")
 
-    def init_multispeaker(self, config: Coqpit, data: list = None):
-        """Set up for multi-speaker TTS.
+    def init_multispeaker(self, samples: list[dict[str, Any]] | None = None) -> None:
+        """Set up multi-speaker modules for the model.
 
-        Initialize a speaker embedding layer if needed and define expected embedding
-        channel size for defining `in_channels` size of the connected layers.
+        If samples are provided, the speaker manager is populated from the training data.
+        Otherwise, the speaker manager uses config settings (for inference from checkpoint).
 
-        This implementation yields 3 possible outcomes:
+        This method handles common multi-speaker setup and calls model-specific hooks:
+        - `_init_speaker_embedding()`: Create speaker embedding layer (if use_speaker_embedding=True)
+        - `_init_d_vector()`: Set up d-vector configuration (if use_d_vector_file=True)
 
-        1. If `config.use_speaker_embedding` and `config.use_d_vector_file` are False, do nothing.
-        2. If `config.use_d_vector_file` is True, set expected embedding channel size to `config.d_vector_dim` or 512.
-        3. If `config.use_speaker_embedding`, initialize a speaker embedding layer with channel size of
-           `config.d_vector_dim` or 512.
-
-        You can override this function for new models.
+        Subclasses can override these hooks to customize speaker embedding creation.
 
         Args:
-            config (Coqpit): Model configuration.
+            samples (list, optional): Training samples to extract speaker information.
+                If provided, populates speaker_manager and updates num_speakers in config.
+                If None, uses existing speaker_manager from config. Defaults to None.
         """
-        # set number of speakers
-        if self.speaker_manager is not None:
-            self.num_speakers = self.speaker_manager.num_speakers
-        elif hasattr(config, "num_speakers"):
-            self.num_speakers = config.num_speakers
+        # Initialize embedding dimension
+        self.embedded_speaker_dim = 0
 
-        # set ultimate speaker embedding size
-        if config.use_speaker_embedding or config.use_d_vector_file:
-            self.embedded_speaker_dim = (
-                config.d_vector_dim if "d_vector_dim" in config and config.d_vector_dim is not None else 512
-            )
-        # init speaker embedding layer
-        if config.use_speaker_embedding and not config.use_d_vector_file:
+        # If samples provided, populate speaker_manager from training data
+        if samples is not None:
+            self.speaker_manager.set_ids_from_data(samples, parse_key="speaker_name")
+
+            # Update num_speakers in model and config
+            self.num_speakers = self.speaker_manager.num_speakers
+            if hasattr(self, "args") and hasattr(self.args, "num_speakers"):
+                self.args.num_speakers = self.num_speakers
+            if hasattr(self.config, "model_args") and self.config.model_args is not None:
+                self.config.model_args.num_speakers = self.num_speakers
+            if hasattr(self.config, "num_speakers"):
+                self.config.num_speakers = self.num_speakers
+        else:
+            # Use existing speaker_manager (for inference)
+            # Set num_speakers from speaker_manager or config
+            if self.speaker_manager is not None and self.speaker_manager.num_speakers > 0:
+                self.num_speakers = self.speaker_manager.num_speakers
+            elif hasattr(self.config, "num_speakers"):
+                self.num_speakers = self.config.num_speakers
+            else:
+                self.num_speakers = 0
+
+        # Set up speaker embeddings or d-vectors if needed
+        if (
+            hasattr(self.config, "use_speaker_embedding")
+            and self.config.use_speaker_embedding
+            and not self.config.use_d_vector_file
+        ):
+            self._init_speaker_embedding()
+        elif hasattr(self.config, "use_d_vector_file") and self.config.use_d_vector_file:
+            self._init_d_vector()
+
+    def _init_speaker_embedding(self):
+        """Initialize speaker embedding layer. Can be overridden by subclasses.
+
+        Default implementation creates a simple embedding layer with:
+        - Input: num_speakers
+        - Output: d_vector_dim or 512
+        - Weight initialization: normal(0, 0.3)
+        """
+        if self.num_speakers > 0:
             logger.info("Init speaker_embedding layer.")
+            self.embedded_speaker_dim = (
+                self.config.d_vector_dim
+                if hasattr(self.config, "d_vector_dim") and self.config.d_vector_dim is not None
+                else 512
+            )
             self.speaker_embedding = nn.Embedding(self.num_speakers, self.embedded_speaker_dim)
             self.speaker_embedding.weight.data.normal_(0, 0.3)
+
+    def _init_d_vector(self):
+        """Initialize d-vector configuration. Can be overridden by subclasses.
+
+        Default implementation sets the expected d-vector dimension.
+        """
+        self.embedded_speaker_dim = (
+            self.config.d_vector_dim
+            if hasattr(self.config, "d_vector_dim") and self.config.d_vector_dim is not None
+            else 512
+        )
 
     def get_aux_input_from_test_sentences(self, sentence_info: str | list[str]) -> dict[str, Any]:
         config = self.config.model_args if self.config.model_args is not None else self.config
@@ -136,7 +181,7 @@ class BaseTTS(CloningMixin, BaseTrainerModel):
         else:
             text = sentence_info
 
-        if speaker is None and self.speaker_manager is not None:
+        if speaker is None and self.speaker_manager.num_speakers > 0:
             speaker = random.sample(self.speaker_manager.speaker_names, 1)[0]
 
         return {
@@ -511,10 +556,9 @@ class BaseTTS(CloningMixin, BaseTrainerModel):
         Returns:
             Tuple of (speaker id, d-vector), one of which is None, depending on the model.
         """
-        if self.speaker_manager is None:
+        if self.speaker_manager.num_speakers == 0:
             return None, None
-
-        if len(self.speaker_manager.name_to_id) == 1:
+        if self.speaker_manager.num_speakers == 1:
             speaker_id = list(self.speaker_manager.name_to_id.values())[0]
             return torch.tensor(speaker_id, device=self.device), None
 

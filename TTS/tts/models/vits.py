@@ -29,7 +29,6 @@ from TTS.tts.layers.vits.stochastic_duration_predictor import StochasticDuration
 from TTS.tts.models.base_tts import BaseTTS
 from TTS.tts.utils.fairseq import rehash_fairseq_vits_checkpoint
 from TTS.tts.utils.helpers import generate_path, rand_segments, segment, sequence_mask
-from TTS.tts.utils.speakers import SpeakerManager
 from TTS.tts.utils.text.characters import BaseCharacters, BaseVocabulary, _characters, _pad, _phonemes, _punctuations
 from TTS.tts.utils.text.tokenizer import TTSTokenizer
 from TTS.tts.utils.visual import plot_alignment
@@ -470,11 +469,10 @@ class Vits(BaseTTS):
         config: Coqpit,
         ap: Union["AudioProcessor", None] = None,
         tokenizer: Union["TTSTokenizer", None] = None,
-        speaker_manager: SpeakerManager | None = None,
     ):
-        super().__init__(config, ap, tokenizer, speaker_manager)
+        super().__init__(config, ap, tokenizer)
 
-        self.init_multispeaker(config)
+        self.init_multispeaker()
         self.init_multilingual(config)
         self.init_upsampling()
 
@@ -559,49 +557,41 @@ class Vits(BaseTTS):
                 use_spectral_norm=self.args.use_spectral_norm_disriminator,
             )
 
-    def init_multispeaker(self, config: Coqpit):
+    def init_multispeaker(self, samples: list = None):
         """Initialize multi-speaker modules of a model. A model can be trained either with a speaker embedding layer
         or with external `d_vectors` computed from a speaker encoder model.
 
-        You must provide a `speaker_manager` at initialization to set up the multi-speaker modules.
-
         Args:
-            config (Coqpit): Model configuration.
-            data (List, optional): Dataset items to infer number of speakers. Defaults to None.
+            samples (list, optional): Training samples to extract speaker information.
+                If provided, populates speaker_manager and updates num_speakers in config.
+                If None, uses existing speaker_manager from config. Defaults to None.
         """
-        self.embedded_speaker_dim = 0
-        self.num_speakers = self.args.num_speakers
+        # Call parent to handle common multi-speaker setup
+        super().init_multispeaker(samples)
+
+        # Initialize audio transform for speaker encoder
         self.audio_transform = None
 
-        if self.speaker_manager:
-            self.num_speakers = self.speaker_manager.num_speakers
-
-        if self.args.use_speaker_embedding:
-            self._init_speaker_embedding()
-
-        if self.args.use_d_vector_file:
-            self._init_d_vector()
-
-        # TODO: make this a function
+        # Set up speaker encoder for speaker consistency loss
         if self.args.use_speaker_encoder_as_loss:
-            if self.speaker_manager.encoder is None and (
-                not self.args.speaker_encoder_model_path or not self.args.speaker_encoder_config_path
-            ):
-                raise RuntimeError(
-                    " [!] To use the speaker consistency loss (SCL) you need to specify speaker_encoder_model_path and speaker_encoder_config_path !!"
-                )
+            if self.speaker_manager is None or self.speaker_manager.encoder is None:
+                if not self.args.speaker_encoder_model_path or not self.args.speaker_encoder_config_path:
+                    raise RuntimeError(
+                        " [!] To use the speaker consistency loss (SCL) you need to specify speaker_encoder_model_path and speaker_encoder_config_path !!"
+                    )
 
-            self.speaker_manager.encoder.eval()
-            logger.info("External Speaker Encoder Loaded !!")
+            if self.speaker_manager and self.speaker_manager.encoder:
+                self.speaker_manager.encoder.eval()
+                logger.info("External Speaker Encoder Loaded !!")
 
-            if (
-                hasattr(self.speaker_manager.encoder, "audio_config")
-                and self.config.audio.sample_rate != self.speaker_manager.encoder.audio_config["sample_rate"]
-            ):
-                self.audio_transform = torchaudio.transforms.Resample(
-                    orig_freq=self.config.audio.sample_rate,
-                    new_freq=self.speaker_manager.encoder.audio_config["sample_rate"],
-                )
+                if (
+                    hasattr(self.speaker_manager.encoder, "audio_config")
+                    and self.config.audio.sample_rate != self.speaker_manager.encoder.audio_config["sample_rate"]
+                ):
+                    self.audio_transform = torchaudio.transforms.Resample(
+                        orig_freq=self.config.audio.sample_rate,
+                        new_freq=self.speaker_manager.encoder.audio_config["sample_rate"],
+                    )
 
     def _init_speaker_embedding(self):
         # pylint: disable=attribute-defined-outside-init
@@ -1540,13 +1530,7 @@ class Vits(BaseTTS):
 
         ap = AudioProcessor.init_from_config(config)
         tokenizer, new_config = TTSTokenizer.init_from_config(config)
-        speaker_manager = SpeakerManager.init_from_config(config, samples)
-
-        if config.model_args.speaker_encoder_model_path:
-            speaker_manager.init_encoder(
-                config.model_args.speaker_encoder_model_path, config.model_args.speaker_encoder_config_path
-            )
-        return Vits(new_config, ap, tokenizer, speaker_manager)
+        return Vits(new_config, ap, tokenizer)
 
     def export_onnx(self, output_path: str = "coqui_vits.onnx", verbose: bool = True):
         """Export model to ONNX format for inference

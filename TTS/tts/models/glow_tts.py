@@ -74,7 +74,7 @@ class GlowTTS(BaseTTS):
         self.decoder_output_dim = config.out_channels
 
         # init multi-speaker layers if necessary
-        self.init_multispeaker(config)
+        self.init_multispeaker()
 
         self.run_data_dep_init = config.data_dep_init_steps > 0
         self.encoder = Encoder(
@@ -104,35 +104,41 @@ class GlowTTS(BaseTTS):
             c_in_channels=self.c_in_channels,
         )
 
-    def init_multispeaker(self, config: Coqpit):
+    def init_multispeaker(self, samples: list = None):
         """Init speaker embedding layer if `use_speaker_embedding` is True and set the expected speaker embedding
         vector dimension to the encoder layer channel size. If model uses d-vectors, then it only sets
         speaker embedding vector dimension to the d-vector dimension from the config.
 
         Args:
-            config (Coqpit): Model configuration.
+            samples (list, optional): Training samples to extract speaker information.
+                If provided, populates speaker_manager and updates num_speakers in config.
+                If None, uses existing speaker_manager from config. Defaults to None.
         """
-        self.embedded_speaker_dim = 0
-        # set number of speakers - if num_speakers is set in config, use it, otherwise use speaker_manager
-        if self.speaker_manager is not None:
-            self.num_speakers = self.speaker_manager.num_speakers
-        # set ultimate speaker embedding size
-        if config.use_d_vector_file:
-            self.embedded_speaker_dim = (
-                config.d_vector_dim if "d_vector_dim" in config and config.d_vector_dim is not None else 512
-            )
-            if self.speaker_manager is not None:
-                assert config.d_vector_dim == self.speaker_manager.embedding_dim, (
-                    " [!] d-vector dimension mismatch b/w config and speaker manager."
-                )
-        # init speaker embedding layer
-        if config.use_speaker_embedding and not config.use_d_vector_file:
+        # Call parent to handle common multi-speaker setup
+        super().init_multispeaker(samples)
+
+        # Set conditioning dimensions
+        self.c_in_channels = self.embedded_speaker_dim
+
+    def _init_speaker_embedding(self):
+        """Initialize speaker embedding layer with GlowTTS-specific settings."""
+        if self.num_speakers > 0:
             logger.info("Init speaker_embedding layer.")
             self.embedded_speaker_dim = self.hidden_channels_enc
             self.emb_g = nn.Embedding(self.num_speakers, self.hidden_channels_enc)
             nn.init.uniform_(self.emb_g.weight, -0.1, 0.1)
-        # set conditioning dimensions
-        self.c_in_channels = self.embedded_speaker_dim
+
+    def _init_d_vector(self):
+        """Initialize d-vector configuration with dimension validation."""
+        config = self.args if hasattr(self, "args") else self.config
+
+        self.embedded_speaker_dim = (
+            config.d_vector_dim if hasattr(config, "d_vector_dim") and config.d_vector_dim is not None else 512
+        )
+        if self.speaker_manager is not None:
+            assert config.d_vector_dim == self.speaker_manager.embedding_dim, (
+                " [!] d-vector dimension mismatch b/w config and speaker manager."
+            )
 
     @staticmethod
     def compute_outputs(attn, o_mean, o_log_scale, x_mask):

@@ -39,8 +39,8 @@ class Tacotron(BaseTacotron):
         # set speaker embedding channel size for determining `in_channels` for the connected layers.
         # `init_multispeaker` needs to be called once more in training to initialize the speaker embedding layer based
         # on the number of speakers infered from the dataset.
+        self.init_multispeaker()
         if self.use_speaker_embedding or self.use_d_vector_file:
-            self.init_multispeaker(config)
             self.decoder_in_features += self.embedded_speaker_dim  # add speaker embedding dim
 
         if self.use_gst:

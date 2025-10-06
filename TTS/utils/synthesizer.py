@@ -220,7 +220,7 @@ class Synthesizer(nn.Module):
         if use_cuda:
             self.tts_model.cuda()
 
-        if self.encoder_checkpoint and hasattr(self.tts_model, "speaker_manager"):
+        if self.encoder_checkpoint:
             self.tts_model.speaker_manager.init_encoder(self.encoder_checkpoint, self.encoder_config, use_cuda)
 
     def _set_speaker_encoder_paths_from_tts_config(self):

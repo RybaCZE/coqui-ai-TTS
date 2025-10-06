@@ -206,7 +206,7 @@ class ForwardTTS(BaseTTS):
     ):
         super().__init__(config, ap, tokenizer)
 
-        self.init_multispeaker(config)
+        self.init_multispeaker()
 
         self.max_duration = self.args.max_duration
         self.use_aligner = self.args.use_aligner
@@ -278,32 +278,30 @@ class ForwardTTS(BaseTTS):
                 in_query_channels=self.args.out_channels, in_key_channels=self.args.hidden_channels
             )
 
-    def init_multispeaker(self, config: Coqpit):
+    def init_multispeaker(self, samples: list = None):
         """Init for multi-speaker training.
 
         Args:
-            config (Coqpit): Model configuration.
+            samples (list, optional): Training samples to extract speaker information.
+                If provided, populates speaker_manager and updates num_speakers in config.
+                If None, uses existing speaker_manager from config. Defaults to None.
         """
-        self.embedded_speaker_dim = 0
-        # init speaker manager
-        if self.speaker_manager is None and (config.use_d_vector_file or config.use_speaker_embedding):
-            raise ValueError(
-                " > SpeakerManager is not provided. You must provide the SpeakerManager before initializing a multi-speaker model."
-            )
-        # set number of speakers
-        if self.speaker_manager is not None:
-            self.num_speakers = self.speaker_manager.num_speakers
-        # init d-vector embedding
-        if config.use_d_vector_file:
-            self.embedded_speaker_dim = config.d_vector_dim
-            if self.args.d_vector_dim != self.args.hidden_channels:
-                # self.proj_g = nn.Conv1d(self.args.d_vector_dim, self.args.hidden_channels, 1)
-                self.proj_g = nn.Linear(in_features=self.args.d_vector_dim, out_features=self.args.hidden_channels)
-        # init speaker embedding layer
-        if config.use_speaker_embedding and not config.use_d_vector_file:
+        # Call parent to handle common multi-speaker setup
+        super().init_multispeaker(samples)
+
+    def _init_speaker_embedding(self):
+        """Initialize speaker embedding layer with ForwardTTS-specific settings."""
+        if self.num_speakers > 0:
             logger.info("Init speaker_embedding layer.")
+            self.embedded_speaker_dim = self.args.hidden_channels
             self.emb_g = nn.Embedding(self.num_speakers, self.args.hidden_channels)
             nn.init.uniform_(self.emb_g.weight, -0.1, 0.1)
+
+    def _init_d_vector(self):
+        """Initialize d-vector configuration with optional projection layer."""
+        self.embedded_speaker_dim = self.args.d_vector_dim
+        if self.args.d_vector_dim != self.args.hidden_channels:
+            self.proj_g = nn.Linear(in_features=self.args.d_vector_dim, out_features=self.args.hidden_channels)
 
     def format_durations(self, o_dr_log, x_mask):
         """Format predicted durations.

@@ -54,7 +54,7 @@ def parse_args(arg_list: list[str] | None) -> argparse.Namespace:
         "--old_file",
         type=str,
         help="The old existing embedding file, from which the embeddings will be directly loaded for already computed audio clips.",
-        default=None,
+        default="",
     )
     parser.add_argument(
         "--old_append",
@@ -101,7 +101,7 @@ def compute_embeddings(
     model_path,
     config_path,
     output_path,
-    old_speakers_file=None,
+    old_speakers_file="",
     old_append=False,
     config_dataset_path=None,
     formatter_name=None,

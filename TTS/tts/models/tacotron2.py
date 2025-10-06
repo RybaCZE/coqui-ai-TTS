@@ -53,8 +53,8 @@ class Tacotron2(BaseTacotron):
             setattr(self, key, config[key])
 
         # init multi-speaker layers
+        self.init_multispeaker()
         if self.use_speaker_embedding or self.use_d_vector_file:
-            self.init_multispeaker(config)
             self.decoder_in_features += self.embedded_speaker_dim  # add speaker embedding dim
 
         if self.use_gst:
