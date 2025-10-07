@@ -1159,13 +1159,11 @@ class DelightfulTTS(BaseTTSE2E):
         self.energy_scaler.eval()
 
     @staticmethod
-    def init_from_config(config: "DelightfulTTSConfig", samples: list[list] | list[dict] = None):  # pylint: disable=unused-argument
+    def init_from_config(config: "DelightfulTTSConfig"):
         """Initiate model from config
 
         Args:
             config (ForwardTTSE2eConfig): Model config.
-            samples (Union[List[List], List[Dict]]): Training samples to parse speaker ids for training.
-                Defaults to None.
         """
 
         tokenizer, new_config = TTSTokenizer.init_from_config(config)

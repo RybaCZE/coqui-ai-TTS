@@ -372,13 +372,11 @@ class AlignTTS(BaseTTS):
         self.phase = self._set_phase(trainer.config, trainer.total_steps_done)
 
     @staticmethod
-    def init_from_config(config: "AlignTTSConfig", samples: list[list] | list[dict] = None):
+    def init_from_config(config: "AlignTTSConfig"):
         """Initiate model from config
 
         Args:
             config (AlignTTSConfig): Model config.
-            samples (Union[List[List], List[Dict]]): Training samples to parse speaker ids for training.
-                Defaults to None.
         """
         from TTS.utils.audio import AudioProcessor
 

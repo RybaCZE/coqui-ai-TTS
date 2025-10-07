@@ -375,13 +375,11 @@ class Tacotron(BaseTacotron):
         return figures, {"audio": audio}
 
     @staticmethod
-    def init_from_config(config: "TacotronConfig", samples: list[list] | list[dict] = None):
+    def init_from_config(config: "TacotronConfig"):
         """Initiate model from config
 
         Args:
             config (TacotronConfig): Model config.
-            samples (Union[List[List], List[Dict]]): Training samples to parse speaker ids for training.
-                Defaults to None.
         """
         from TTS.utils.audio import AudioProcessor
 

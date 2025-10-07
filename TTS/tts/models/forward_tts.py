@@ -774,13 +774,11 @@ class ForwardTTS(BaseTTS):
         self.binary_loss_weight = min(trainer.epochs_done / self.config.binary_loss_warmup_epochs, 1.0) * 1.0
 
     @staticmethod
-    def init_from_config(config: "ForwardTTSConfig", samples: list[list] | list[dict] = None):
+    def init_from_config(config: "ForwardTTSConfig"):
         """Initiate model from config
 
         Args:
             config (ForwardTTSConfig): Model config.
-            samples (Union[List[List], List[Dict]]): Training samples to parse speaker ids for training.
-                Defaults to None.
         """
         from TTS.utils.audio import AudioProcessor
 

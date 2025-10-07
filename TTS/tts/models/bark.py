@@ -306,7 +306,7 @@ class Bark(BaseTTS):
     def inference(self): ...
 
     @staticmethod
-    def init_from_config(config: "BarkConfig", **kwargs):  # pylint: disable=unused-argument
+    def init_from_config(config: "BarkConfig"):
         return Bark(config)
 
     # pylint: disable=unused-argument, redefined-builtin

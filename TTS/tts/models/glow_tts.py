@@ -490,13 +490,11 @@ class GlowTTS(BaseTTS):
         self.run_data_dep_init = trainer.total_steps_done < self.data_dep_init_steps
 
     @staticmethod
-    def init_from_config(config: "GlowTTSConfig", samples: list[list] | list[dict] = None):
+    def init_from_config(config: "GlowTTSConfig"):
         """Initiate model from config
 
         Args:
             config (VitsConfig): Model config.
-            samples (Union[List[List], List[Dict]]): Training samples to parse speaker ids for training.
-                Defaults to None.
         """
         from TTS.utils.audio import AudioProcessor
 

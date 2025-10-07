@@ -681,7 +681,7 @@ class Xtts(BaseTTS):
         )
 
     @staticmethod
-    def init_from_config(config: "XttsConfig", **kwargs):  # pylint: disable=unused-argument
+    def init_from_config(config: "XttsConfig"):
         return Xtts(config)
 
     def eval(self):  # pylint: disable=redefined-builtin

@@ -831,7 +831,7 @@ class Tortoise(BaseTTS):
         raise NotImplementedError("Tortoise Training is not implemented")
 
     @staticmethod
-    def init_from_config(config: "TortoiseConfig", **kwargs):  # pylint: disable=unused-argument
+    def init_from_config(config: "TortoiseConfig"):
         return Tortoise(config)
 
     def load_checkpoint(

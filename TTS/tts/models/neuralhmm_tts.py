@@ -233,13 +233,11 @@ class NeuralhmmTTS(BaseTTS):
         return NLLLoss()
 
     @staticmethod
-    def init_from_config(config: "NeuralhmmTTSConfig", samples: list[list] | list[dict] = None):
+    def init_from_config(config: "NeuralhmmTTSConfig"):
         """Initiate model from config
 
         Args:
             config (VitsConfig): Model config.
-            samples (Union[List[List], List[Dict]]): Training samples to parse speaker ids for training.
-                Defaults to None.
         """
         from TTS.utils.audio import AudioProcessor
 

@@ -5,9 +5,10 @@ from dataclasses import dataclass, field
 
 from trainer import Trainer, TrainerArgs
 
-from TTS.config import load_config, register_config
+from TTS.config import get_from_config_or_model_args, load_config, register_config
 from TTS.tts.datasets import load_tts_samples
 from TTS.tts.models import setup_model
+from TTS.tts.models.base_tts import BaseTTS
 from TTS.utils.generic_utils import ConsoleFormatter, setup_logger
 
 
@@ -29,24 +30,23 @@ def main(arg_list: list[str] | None = None):
     train_args.parse_args(args)
 
     # load config.json and register
-    if args.config_path or args.continue_path:
-        if args.config_path:
-            # init from a file
-            config = load_config(args.config_path)
-            if len(config_overrides) > 0:
-                config.parse_known_args(config_overrides, relaxed_parser=True)
-        elif args.continue_path:
-            # continue from a prev experiment
-            config = load_config(os.path.join(args.continue_path, "config.json"))
-            if len(config_overrides) > 0:
-                config.parse_known_args(config_overrides, relaxed_parser=True)
-        else:
-            # init from console args
-            from TTS.config.shared_configs import BaseTrainingConfig  # pylint: disable=import-outside-toplevel
+    if args.config_path:
+        # init from a file
+        config = load_config(args.config_path)
+        if len(config_overrides) > 0:
+            config.parse_known_args(config_overrides, relaxed_parser=True)
+    elif args.continue_path:
+        # continue from a prev experiment
+        config = load_config(os.path.join(args.continue_path, "config.json"))
+        if len(config_overrides) > 0:
+            config.parse_known_args(config_overrides, relaxed_parser=True)
+    else:
+        # init from console args
+        from TTS.config.shared_configs import BaseTrainingConfig
 
-            config_base = BaseTrainingConfig()
-            config_base.parse_known_args(config_overrides)
-            config = register_config(config_base.model)()
+        config_base = BaseTrainingConfig()
+        config_base.parse_known_args(config_overrides)
+        config = register_config(config_base.model)()
 
     # load training samples
     train_samples, eval_samples = load_tts_samples(
@@ -57,7 +57,11 @@ def main(arg_list: list[str] | None = None):
     )
 
     # init the model from config
-    model = setup_model(config, train_samples + eval_samples)
+    model: BaseTTS = setup_model(config)
+    if get_from_config_or_model_args(config, "use_speaker_embedding") or get_from_config_or_model_args(
+        config, "use_d_vector_file"
+    ):
+        model.init_multispeaker(train_samples + eval_samples)
 
     # init the trainer and 🚀
     trainer = Trainer(
