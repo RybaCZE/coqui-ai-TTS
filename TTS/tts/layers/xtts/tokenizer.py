@@ -542,8 +542,10 @@ def _expand_ordinal(m, lang="en"):
     return num2words(int(m.group(1)), ordinal=True, lang=lang)
 
 
-def _expand_number(m, lang="en"):
-    return num2words(int(m.group(0)), lang=lang)
+def _expand_ordinal(m, lang="en"):
+    if lang == "cs":
+        return m.group(0)  # keep original text for Czech
+    return num2words(int(m.group(1)), ordinal=True, lang=lang)
 
 
 def expand_numbers_multilingual(text, lang="en"):
