@@ -3,6 +3,7 @@ import os
 import re
 import textwrap
 from functools import cached_property
+from TTS.tts.layers.xtts.number_norm import _expand_number
 
 import torch
 from ko_speech_tools import hangul_romanize
