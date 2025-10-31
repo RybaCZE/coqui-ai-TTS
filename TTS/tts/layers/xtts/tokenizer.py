@@ -3,7 +3,7 @@ import os
 import re
 import textwrap
 from functools import cached_property
-from TTS.tts.layers.xtts.number_norm import _expand_number
+# from TTS.tts.layers.xtts.number_norm import _expand_number
 
 import torch
 from ko_speech_tools import hangul_romanize
@@ -15,7 +15,8 @@ from TTS.tts.utils.text.cleaners import collapse_whitespace, lowercase
 
 logger = logging.getLogger(__name__)
 
-
+def _expand_number(m, lang):
+    return num2words(int(m.group(0)), lang=lang)
 def get_spacy_lang(lang):
     try:
         from spacy.lang.ar import Arabic
